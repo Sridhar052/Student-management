@@ -1,0 +1,20 @@
+# Dependencies & Build artifacts
+node_modules/
+target/
+.mvn/
+*.jar
+*.war
+
+# Environment & Config
+.env.local
+.env.*.local
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
