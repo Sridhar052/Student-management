@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, ShieldCheck, Lock, User, Check, ArrowRight, Info } from 'lucide-react';
+import { GraduationCap, Lock, User, ArrowRight } from 'lucide-react';
 
 const Login = () => {
-  const [username, setUsername] = useState('STU2024001');
-  const [password, setPassword] = useState('student123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
@@ -28,16 +28,6 @@ const Login = () => {
     }
   };
 
-  const setDemoUser = (userType) => {
-    if (userType === 'student') {
-      setUsername('STU2024001');
-      setPassword('student123');
-    } else if (userType === 'admin') {
-      setUsername('ADMIN001');
-      setPassword('admin123');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
       {/* Dynamic Ambient Background Elements */}
@@ -52,29 +42,6 @@ const Login = () => {
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">StudentHub</h1>
           <p className="text-sm text-slate-400 mt-1">Enterprise College & Student Management Portal</p>
-        </div>
-
-        {/* Demo Quick Fill Switcher */}
-        <div className="glass-card p-3 rounded-xl mb-6 border border-indigo-500/20 flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-300 flex items-center">
-            <Info className="w-4 h-4 mr-1.5 text-indigo-400" /> Quick Demo Credentials:
-          </span>
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              onClick={() => setDemoUser('student')}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/50 border border-indigo-500/30 transition-colors"
-            >
-              Student
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoUser('admin')}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 border border-amber-500/30 transition-colors"
-            >
-              Admin
-            </button>
-          </div>
         </div>
 
         {/* Login Form Card */}
