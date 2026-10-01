@@ -16,12 +16,12 @@ WORKDIR /app
 # Copy built jar from build stage
 COPY --from=build /app/target/studenthub-backend-1.0.0.jar app.jar
 
-# Expose default Spring Boot port
+# Expose port
 EXPOSE 8080
 
 # Environment defaults
 ENV PORT=8080
 ENV SPRING_PROFILES_ACTIVE=postgres
 
-# Launch Spring Boot application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Launch Spring Boot application using sh -c so PORT env variable is evaluated dynamically
+CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
