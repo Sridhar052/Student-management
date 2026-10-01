@@ -1,0 +1,41 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Backend Web Service (Spring Boot + Docker)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: studenthub-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: singapore
+    plan: free
+    healthCheckPath: /api/auth/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      - key: DB_URL
+        value: jdbc:postgresql://db.tctecdannkhtjgxuwyol.supabase.co:5432/postgres?sslmode=require
+      - key: DB_USERNAME
+        value: postgres
+      - key: DB_PASSWORD
+        value: StudentHub2026Secure!
+      - key: JWT_SECRET
+        value: StudentHubSecureJWTSecretKeyMustBeAtLeast32BytesLongForHS256Algorithm2026!
+      - key: JWT_EXPIRATION
+        value: "86400000"
+
+  # ----------------------------------------------------------------------------
+  # Frontend Static Site (React + Vite)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: studenthub-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://studenthub-backend.onrender.com/api

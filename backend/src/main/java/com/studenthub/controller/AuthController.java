@@ -28,4 +28,9 @@ public class AuthController {
         AuthResponse response = authService.registerStudent(registerRequest);
         return ResponseEntity.ok(ApiResponse.success("Registration successful", response));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> healthCheck() {
+        return ResponseEntity.ok(ApiResponse.success("StudentHub API is healthy", "OK"));
+    }
 }

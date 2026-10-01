@@ -1,7 +1,6 @@
 # Dependencies & Build artifacts
 node_modules/
 target/
-.mvn/
 *.jar
 *.war
 
