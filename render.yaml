@@ -12,11 +12,11 @@ services:
     healthCheckPath: /api/auth/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
-        value: postgres
+        value: h2
       - key: DB_URL
-        value: jdbc:postgresql://db.tctecdannkhtjgxuwyol.supabase.co:5432/postgres?sslmode=require
+        value: jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
       - key: DB_USERNAME
-        value: postgres
+        value: postgres.tctecdannkhtjgxuwyol
       - key: DB_PASSWORD
         value: StudentHub2026Secure!
       - key: JWT_SECRET

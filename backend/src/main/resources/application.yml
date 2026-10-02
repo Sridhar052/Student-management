@@ -20,8 +20,8 @@ spring:
     activate:
       on-profile: postgres
   datasource:
-    url: ${DB_URL:jdbc:postgresql://db.tctecdannkhtjgxuwyol.supabase.co:5432/postgres?sslmode=require}
-    username: ${DB_USERNAME:postgres}
+    url: ${DB_URL:jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require}
+    username: ${DB_USERNAME:postgres.tctecdannkhtjgxuwyol}
     password: ${DB_PASSWORD:StudentHub2026Secure!}
     driver-class-name: org.postgresql.Driver
     hikari:
