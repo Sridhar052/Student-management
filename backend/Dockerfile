@@ -2,9 +2,9 @@
 FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 
-# Copy Maven POM and source files
-COPY pom.xml .
-COPY src ./src
+# Copy Maven POM and source files from repository root build context
+COPY backend/pom.xml ./pom.xml
+COPY backend/src ./src
 
 # Package the application skipping tests for speed
 RUN mvn clean package -DskipTests
