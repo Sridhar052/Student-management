@@ -6,7 +6,7 @@ services:
     name: studenthub-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
+    dockerContext: ./backend
     region: singapore
     plan: free
     healthCheckPath: /api/auth/health

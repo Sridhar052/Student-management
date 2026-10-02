@@ -14,7 +14,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Copy built jar from build stage
-COPY --from=build /app/target/studenthub-backend-1.0.0.jar app.jar
+COPY --from=build /app/target/*.jar app.jar
 
 # Expose port
 EXPOSE 8080
@@ -23,5 +23,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV SPRING_PROFILES_ACTIVE=postgres
 
-# Launch Spring Boot application using sh -c so PORT env variable is evaluated dynamically
-CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
+# Launch Spring Boot application using sh -c so PORT env variable is evaluated dynamically with memory limits
+CMD ["sh", "-c", "java -Xmx384m -Dserver.port=${PORT:-8080} -jar app.jar"]
