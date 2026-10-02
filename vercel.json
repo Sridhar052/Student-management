@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://studenthub-backend.onrender.com/api/:path*"
+      "destination": "https://ready-dogs-mix.loca.lt/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
