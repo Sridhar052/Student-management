@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import dataStore from '../../services/dataStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { User, Phone, Mail, MapPin, Building, Calendar, Shield, Save, Edit3, Lock } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Building, Calendar, Shield, Save, Edit3, Lock, Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const StudentProfile = () => {
@@ -12,8 +12,14 @@ const StudentProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
+    fullName: '',
+    registerNumber: '',
+    studentId: '',
+    dob: '',
+    gender: 'Male',
     phone: '',
     email: '',
     address: '',
@@ -21,6 +27,13 @@ const StudentProfile = () => {
     district: '',
     state: '',
     pincode: '',
+    department: 'Computer Science',
+    course: 'B.Tech CSE',
+    batch: '2023-2027',
+    year: 1,
+    semester: 1,
+    section: 'A',
+    admissionDate: '',
     parentName: '',
     parentRelation: '',
     parentPhone: '',
@@ -51,6 +64,11 @@ const StudentProfile = () => {
 
     setProfile(p);
     setFormData({
+      fullName: p?.fullName || p?.studentName || 'Student',
+      registerNumber: p?.registerNumber || 'STU2026001',
+      studentId: p?.studentId || p?.registerNumber || 'STU2026001',
+      dob: p?.dob || '2004-05-15',
+      gender: p?.gender || 'Male',
       phone: p?.phone || '+91 98765 43210',
       email: p?.email || 'student@studenthub.edu',
       address: p?.address || '123 Academic Block, Campus Avenue',
@@ -58,6 +76,13 @@ const StudentProfile = () => {
       district: p?.district || 'Chennai',
       state: p?.state || 'Tamil Nadu',
       pincode: p?.pincode || '600028',
+      department: p?.department || 'Computer Science',
+      course: p?.course || 'B.Tech CSE',
+      batch: p?.batch || '2023-2027',
+      year: p?.year || 1,
+      semester: p?.semester || 1,
+      section: p?.section || 'A',
+      admissionDate: p?.admissionDate || '2023-08-15',
       parentName: p?.parentName || 'Rajesh Sharma',
       parentRelation: p?.parentRelation || 'Father',
       parentPhone: p?.parentPhone || '+91 98765 00000',
@@ -71,15 +96,48 @@ const StudentProfile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Image = reader.result;
+        setFormData((prev) => ({ ...prev, profileImage: base64Image }));
+        setProfile((prev) => ({ ...prev, profileImage: base64Image }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMessage({ type: '', text: '' });
 
-    const updatedProfile = { ...profile, ...formData };
+    const updatedProfile = {
+      ...profile,
+      ...formData,
+      fullName: formData.fullName,
+      firstName: formData.fullName.split(' ')[0] || formData.fullName,
+      lastName: formData.fullName.split(' ').slice(1).join(' ') || '',
+    };
+
     setProfile(updatedProfile);
     dataStore.updateStudent(updatedProfile);
-    updateUser({ studentName: updatedProfile.fullName, email: formData.email, phone: formData.phone });
+
+    // Update global user context & localStorage
+    updateUser({
+      studentName: formData.fullName,
+      fullName: formData.fullName,
+      registerNumber: formData.registerNumber,
+      email: formData.email,
+      phone: formData.phone,
+      department: formData.department,
+      course: formData.course,
+      year: formData.year,
+      semester: formData.semester,
+      profileImage: formData.profileImage,
+    });
 
     try {
       await api.put('/students/me', formData);
@@ -88,51 +146,82 @@ const StudentProfile = () => {
     }
 
     setIsEditing(false);
-    setMessage({ type: 'success', text: 'Profile updated successfully!' });
+    setMessage({ type: 'success', text: 'All profile details and picture updated successfully!' });
     setSaving(false);
   };
 
   if (loading) return <LoadingSpinner label="Loading Profile Data..." />;
+
+  const displayImage =
+    formData.profileImage ||
+    profile?.profileImage ||
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
       <div className="glass-card p-6 lg:p-8 rounded-3xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center space-x-5">
-          <div className="relative">
+          {/* Profile Picture Upload Avatar */}
+          <div
+            className="relative group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            title="Click to upload profile photo"
+          >
             <img
-              src={profile?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-              alt={profile?.fullName}
-              className="w-24 h-24 rounded-2xl object-cover border-2 border-indigo-500/40 shadow-xl"
+              src={displayImage}
+              alt={formData.fullName || profile?.fullName}
+              className="w-24 h-24 rounded-2xl object-cover border-2 border-indigo-500/40 shadow-xl group-hover:opacity-80 transition-opacity"
             />
+            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <Camera className="w-7 h-7 text-white" />
+            </div>
             <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
           </div>
+
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-white">{profile?.fullName}</h1>
+              <h1 className="text-2xl font-bold text-white">{formData.fullName || profile?.fullName}</h1>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 {profile?.status || 'ACTIVE'}
               </span>
             </div>
             <p className="text-sm text-slate-400 mt-1 font-mono">
-              Register No: {profile?.registerNumber} | Student ID: {profile?.studentId}
+              Register No: {formData.registerNumber || profile?.registerNumber} | Student ID:{' '}
+              {formData.studentId || profile?.studentId}
             </p>
             <p className="text-xs text-indigo-400 mt-1 font-medium">
-              {profile?.course} • {profile?.department} (Sem {profile?.semester})
+              {formData.course || profile?.course} • {formData.department || profile?.department} (Sem{' '}
+              {formData.semester || profile?.semester})
             </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center space-x-1"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Change Profile Picture</span>
+            </button>
           </div>
         </div>
 
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className={`px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center space-x-2 transition-all ${
+          className={`px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center space-x-2 transition-all ${
             isEditing
-              ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              ? 'bg-amber-600 text-white hover:bg-amber-500 shadow-lg shadow-amber-600/30'
               : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/30'
           }`}
         >
           {isEditing ? <Lock className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-          <span>{isEditing ? 'Cancel Edit' : 'Edit Allowed Fields'}</span>
+          <span>{isEditing ? 'Done Editing' : 'Edit Profile Details'}</span>
         </button>
       </div>
 
@@ -148,68 +237,104 @@ const StudentProfile = () => {
         </div>
       )}
 
-      {/* Main Profile Details Form / Grid */}
+      {/* Main Profile Details Form */}
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* 1. Personal Information */}
         <div className="glass-card p-6 rounded-2xl border border-slate-800">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center">
-            <User className="w-5 h-5 mr-2 text-indigo-400" />
-            Personal Information
+          <h2 className="text-lg font-bold text-white mb-4 flex items-center justify-between">
+            <span className="flex items-center">
+              <User className="w-5 h-5 mr-2 text-indigo-400" />
+              Personal Information
+            </span>
+            {isEditing && <span className="text-xs text-indigo-400 font-normal">Editing Mode Active</span>}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Register Number (Locked)</label>
+              <label className="block text-xs text-slate-300 mb-1">Full Name</label>
               <input
                 type="text"
-                disabled
-                value={profile?.registerNumber || ''}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-sm cursor-not-allowed"
+                name="fullName"
+                disabled={!isEditing}
+                value={formData.fullName}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Student ID (Locked)</label>
+              <label className="block text-xs text-slate-300 mb-1">Register Number</label>
               <input
                 type="text"
-                disabled
-                value={profile?.studentId || ''}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-sm cursor-not-allowed"
+                name="registerNumber"
+                disabled={!isEditing}
+                value={formData.registerNumber}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm font-mono transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Full Name (Locked)</label>
+              <label className="block text-xs text-slate-300 mb-1">Student ID</label>
               <input
                 type="text"
-                disabled
-                value={profile?.fullName || ''}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-sm cursor-not-allowed"
+                name="studentId"
+                disabled={!isEditing}
+                value={formData.studentId}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm font-mono transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Date of Birth (Locked)</label>
+              <label className="block text-xs text-slate-300 mb-1">Date of Birth</label>
               <input
-                type="text"
-                disabled
-                value={profile?.dob || ''}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-sm cursor-not-allowed"
+                type="date"
+                name="dob"
+                disabled={!isEditing}
+                value={formData.dob}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Gender (Locked)</label>
-              <input
-                type="text"
-                disabled
-                value={profile?.gender || ''}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-sm cursor-not-allowed"
-              />
+              <label className="block text-xs text-slate-300 mb-1">Gender</label>
+              <select
+                name="gender"
+                disabled={!isEditing}
+                value={formData.gender}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">Phone Number (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">Phone Number</label>
               <input
                 type="text"
                 name="phone"
@@ -218,14 +343,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">Email Address (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">Email Address</label>
               <input
                 type="email"
                 name="email"
@@ -234,14 +359,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs text-slate-300 mb-1">Residential Address (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">Residential Address</label>
               <input
                 type="text"
                 name="address"
@@ -250,14 +375,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">City (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">City</label>
               <input
                 type="text"
                 name="city"
@@ -266,14 +391,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">District (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">District</label>
               <input
                 type="text"
                 name="district"
@@ -282,14 +407,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">State (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">State</label>
               <input
                 type="text"
                 name="state"
@@ -298,14 +423,14 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-300 mb-1">Pincode (Editable)</label>
+              <label className="block text-xs text-slate-300 mb-1">Pincode</label>
               <input
                 type="text"
                 name="pincode"
@@ -314,7 +439,7 @@ const StudentProfile = () => {
                 onChange={handleChange}
                 className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
                   isEditing
-                    ? 'bg-slate-900 border border-indigo-500/50 text-white'
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
                     : 'bg-slate-950 border border-slate-800 text-slate-300'
                 }`}
               />
@@ -322,72 +447,136 @@ const StudentProfile = () => {
           </div>
         </div>
 
-        {/* 2. Academic Information (Locked to Admin) */}
+        {/* 2. Academic Information */}
         <div className="glass-card p-6 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white flex items-center">
               <Building className="w-5 h-5 mr-2 text-indigo-400" />
-              Academic Details (Admin Enforced)
+              Academic Details
             </h2>
-            <span className="text-xs text-slate-400 flex items-center">
-              <Lock className="w-3.5 h-3.5 mr-1 text-amber-400" /> Managed by College Admin
-            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Department</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                {profile?.department}
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Department</label>
+              <input
+                type="text"
+                name="department"
+                disabled={!isEditing}
+                value={formData.department}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Course</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                {profile?.course}
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Course</label>
+              <input
+                type="text"
+                name="course"
+                disabled={!isEditing}
+                value={formData.course}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Batch</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                {profile?.batch}
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Batch</label>
+              <input
+                type="text"
+                name="batch"
+                disabled={!isEditing}
+                value={formData.batch}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Year / Semester</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                Year {profile?.year} (Semester {profile?.semester})
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Year</label>
+              <input
+                type="number"
+                name="year"
+                min={1}
+                max={4}
+                disabled={!isEditing}
+                value={formData.year}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Section</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                Section {profile?.section}
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Semester</label>
+              <input
+                type="number"
+                name="semester"
+                min={1}
+                max={8}
+                disabled={!isEditing}
+                value={formData.semester}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Admission Date</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-sm">
-                {profile?.admissionDate}
-              </div>
+              <label className="block text-xs text-slate-300 mb-1">Section</label>
+              <input
+                type="text"
+                name="section"
+                disabled={!isEditing}
+                value={formData.section}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-300 mb-1">Admission Date</label>
+              <input
+                type="date"
+                name="admissionDate"
+                disabled={!isEditing}
+                value={formData.admissionDate}
+                onChange={handleChange}
+                className={`w-full px-3.5 py-2 rounded-xl text-sm transition-all ${
+                  isEditing
+                    ? 'bg-slate-900 border border-indigo-500/50 text-white focus:ring-2 focus:ring-indigo-500'
+                    : 'bg-slate-950 border border-slate-800 text-slate-300'
+                }`}
+              />
             </div>
 
             <div>
               <label className="block text-xs text-slate-400 mb-1">Overall CGPA</label>
               <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-emerald-400 font-bold text-sm">
-                {profile?.cgpa ? profile.cgpa.toFixed(2) : 'N/A'}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Attendance Percentage</label>
-              <div className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-indigo-300 font-bold text-sm">
-                {profile?.attendancePercentage}%
+                {profile?.cgpa ? profile.cgpa.toFixed(2) : '8.50'}
               </div>
             </div>
           </div>
@@ -462,7 +651,7 @@ const StudentProfile = () => {
         {/* Save Bar when editing */}
         {isEditing && (
           <div className="sticky bottom-4 z-20 glass-card p-4 rounded-2xl border border-indigo-500/30 flex items-center justify-between shadow-2xl bg-slate-900/90 backdrop-blur-xl">
-            <span className="text-xs text-slate-300">You have unsaved edits in your profile.</span>
+            <span className="text-xs text-slate-300">You have active edits in your profile.</span>
             <div className="flex space-x-3">
               <button
                 type="button"
