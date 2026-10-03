@@ -9,7 +9,15 @@
       "destination": "https://studenthub-backend.onrender.com/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/h2-console/:path*",
+      "destination": "https://studenthub-backend.onrender.com/h2-console/:path*"
+    },
+    {
+      "source": "/h2-console",
+      "destination": "https://studenthub-backend.onrender.com/h2-console"
+    },
+    {
+      "source": "/((?!api/|h2-console).*)",
       "destination": "/index.html"
     }
   ]
