@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Folder, FileText, Download, ShieldCheck } from 'lucide-react';
@@ -13,16 +14,30 @@ const AdminDocuments = () => {
   }, []);
 
   const fetchDocuments = async () => {
+    let docs = [];
     try {
       const res = await api.get('/students/me/documents');
-      if (res.success && res.data) {
-        setDocuments(res.data);
+      if (res && res.success && Array.isArray(res.data)) {
+        docs = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Document vault API unavailable, reading local dataStore docs:', err);
     }
+
+    if (docs.length === 0) {
+      docs = dataStore.getDocuments().map((d) => ({
+        id: d.id,
+        documentName: d.name,
+        documentType: d.category,
+        fileSize: '1.4 MB',
+        uploadedDate: d.uploadedAt,
+        status: d.status,
+        fileUrl: '#',
+      }));
+    }
+
+    setDocuments(docs);
+    setLoading(false);
   };
 
   if (loading) return <LoadingSpinner label="Loading Institutional Document Vault..." />;

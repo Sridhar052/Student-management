@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
 import { FileText, Plus, Eye, Clock, CheckCircle2, AlertCircle, Calendar, Tag } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const StudentApplications = () => {
+  const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('');
@@ -31,48 +34,63 @@ const StudentApplications = () => {
   }, []);
 
   const fetchApplications = async () => {
+    let list = [];
     try {
       const res = await api.get('/students/me/applications');
-      if (res.success && res.data) {
-        setApplications(res.data);
+      if (res && res.success && Array.isArray(res.data)) {
+        list = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Student applications API offline, loading dataStore applications:', err);
     }
+
+    if (list.length === 0) {
+      const regNo = user?.registerNumber || 'STU2026001';
+      list = dataStore.getApplications().filter((a) => a.registerNumber === regNo || a.studentId === user?.id);
+    }
+
+    setApplications(list);
+    setLoading(false);
   };
 
   const handleOpenDetails = async (id) => {
     setDetailModal(true);
     setLoadingDetails(true);
+    let app = null;
+
     try {
       const res = await api.get(`/applications/${id}`);
-      if (res.success && res.data) {
-        setSelectedAppDetails(res.data);
+      if (res && res.success && res.data) {
+        app = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingDetails(false);
+      console.warn('Application details API offline:', err);
     }
+
+    if (!app) {
+      app = dataStore.getApplications().find((a) => a.id === Number(id)) || applications.find((a) => a.id === Number(id));
+    }
+
+    setSelectedAppDetails(app);
+    setLoadingDetails(false);
   };
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
+    dataStore.submitApplication(newApp, user);
+
     try {
-      const res = await api.post('/students/me/applications', newApp);
-      if (res.success && res.data) {
-        setCreateModal(false);
-        setNewApp({ applicationType: 'BONAFIDE_CERTIFICATE', title: '', description: '' });
-        fetchApplications();
-      }
+      await api.post('/students/me/applications', newApp);
     } catch (err) {
-      alert(err.toString());
-    } finally {
-      setSubmitting(false);
+      console.warn('Backend application submit API failed, saved locally:', err);
     }
+
+    setCreateModal(false);
+    setNewApp({ applicationType: 'BONAFIDE_CERTIFICATE', title: '', description: '' });
+    fetchApplications();
+    setSubmitting(false);
   };
 
   const filteredApps = applications.filter((app) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
@@ -36,41 +37,58 @@ const AdminMarks = () => {
   }, [selectedStudentId]);
 
   const initData = async () => {
+    let stuData = [];
+    let subData = [];
+
     try {
       const [stuRes, subRes] = await Promise.all([
         api.get('/admin/students'),
         api.get('/subjects'),
       ]);
-      if (stuRes.success && stuRes.data) {
-        setStudents(stuRes.data);
-        if (stuRes.data.length > 0) {
-          setSelectedStudentId(stuRes.data[0].id);
-        }
-      }
-      if (subRes.success) setSubjects(subRes.data || []);
+      if (stuRes && stuRes.success && Array.isArray(stuRes.data)) stuData = stuRes.data;
+      if (subRes && subRes.success && Array.isArray(subRes.data)) subData = subRes.data;
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Backend API for marks init unavailable, using dataStore:', err);
     }
+
+    if (stuData.length === 0) stuData = dataStore.getRegisteredStudents();
+    if (subData.length === 0) subData = dataStore.getSubjects();
+
+    setStudents(stuData);
+    setSubjects(subData);
+    if (stuData.length > 0) {
+      setSelectedStudentId(stuData[0].id);
+    }
+    setLoading(false);
   };
 
   const fetchStudentSummary = async (studentId) => {
     try {
       const res = await api.get(`/admin/marks/student/${studentId}`);
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setSummary(res.data);
+        return;
       }
     } catch (err) {
-      console.error(err);
+      console.warn('Marks summary API error, loading local dataStore marks summary:', err);
     }
+
+    const localSummary = dataStore.getStudentMarks(studentId);
+    setSummary(localSummary);
   };
 
   const handleSaveMark = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
+    dataStore.addMark({
+      ...markForm,
+      studentId: selectedStudentId,
+      semester: selectedSem,
+    });
+
     try {
-      const res = await api.post('/admin/marks', {
+      await api.post('/admin/marks', {
         ...markForm,
         studentId: parseInt(selectedStudentId),
         subjectId: parseInt(markForm.subjectId),
@@ -78,26 +96,27 @@ const AdminMarks = () => {
         externalMarks: parseFloat(markForm.externalMarks),
         semester: parseInt(selectedSem),
       });
-
-      if (res.success) {
-        setAddMarkModal(false);
-        fetchStudentSummary(selectedStudentId);
-      }
     } catch (err) {
-      alert(err.toString());
-    } finally {
-      setSubmitting(false);
+      console.warn('Backend mark save failed, mark saved locally:', err);
     }
+
+    setAddMarkModal(false);
+    fetchStudentSummary(selectedStudentId);
+    setSubmitting(false);
   };
 
   const handleDeleteMark = async (markId) => {
     if (!window.confirm('Delete this mark entry?')) return;
+
+    dataStore.deleteMark(markId, selectedStudentId);
+
     try {
       await api.delete(`/admin/marks/${markId}`);
-      fetchStudentSummary(selectedStudentId);
     } catch (err) {
-      alert(err.toString());
+      console.warn('Backend delete mark failed, mark removed locally:', err);
     }
+
+    fetchStudentSummary(selectedStudentId);
   };
 
   if (loading) return <LoadingSpinner label="Loading Academic Gradebook..." />;

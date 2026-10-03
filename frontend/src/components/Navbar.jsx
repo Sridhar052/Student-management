@@ -98,12 +98,12 @@ const Navbar = ({ toggleSidebar }) => {
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-0.5 shadow-md group-hover:ring-2 ring-indigo-500/50 transition-all">
               <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-                {user?.studentName ? user.studentName.charAt(0).toUpperCase() : 'U'}
+                {(user?.fullName || user?.studentName || 'U').charAt(0).toUpperCase()}
               </div>
             </div>
             <div className="hidden md:flex flex-col text-left">
               <span className="text-sm font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors line-clamp-1">
-                {user?.studentName || 'User'}
+                {user?.fullName || user?.studentName || 'User'}
               </span>
               <span className="text-xs text-slate-400 line-clamp-1">
                 {user?.email}

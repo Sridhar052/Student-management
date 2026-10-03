@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import StatusBadge from '../../components/StatusBadge';
 import { BookOpen, Printer, Download, Award, TrendingUp, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const StudentMarks = () => {
+  const { user } = useAuth();
   const [academicSummary, setAcademicSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSem, setActiveSem] = useState('ALL');
@@ -15,16 +18,22 @@ const StudentMarks = () => {
   }, []);
 
   const fetchMarks = async () => {
+    let summary = null;
     try {
       const res = await api.get('/students/me/academic-summary');
-      if (res.success && res.data) {
-        setAcademicSummary(res.data);
+      if (res && res.success && res.data) {
+        summary = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Backend marks summary API offline, loading from dataStore:', err);
     }
+
+    if (!summary) {
+      summary = dataStore.getStudentMarks(user?.registerNumber || 'STU2026001');
+    }
+
+    setAcademicSummary(summary);
+    setLoading(false);
   };
 
   const handlePrint = () => {

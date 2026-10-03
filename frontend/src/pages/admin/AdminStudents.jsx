@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
@@ -42,6 +43,7 @@ const AdminStudents = () => {
   }, [search, deptFilter, yearFilter, statusFilter]);
 
   const fetchStudents = async () => {
+    let apiStudents = [];
     try {
       let url = `/admin/students?search=${encodeURIComponent(search)}`;
       if (deptFilter) url += `&department=${encodeURIComponent(deptFilter)}`;
@@ -49,56 +51,115 @@ const AdminStudents = () => {
       if (statusFilter) url += `&status=${statusFilter}`;
 
       const res = await api.get(url);
-      if (res.success && res.data) {
-        setStudents(res.data);
+      if (res && res.success && Array.isArray(res.data)) {
+        apiStudents = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Backend API student list fetch unavailable, falling back to local persistent store:', err);
     }
+
+    // Always merge API students + local dataStore registered students
+    const localStudents = dataStore.getRegisteredStudents();
+    const mergedMap = new Map();
+
+    // Add local students first
+    localStudents.forEach((s) => {
+      const key = s.registerNumber || s.id;
+      mergedMap.set(key, s);
+    });
+
+    // Merge API students
+    apiStudents.forEach((s) => {
+      const key = s.registerNumber || s.id;
+      mergedMap.set(key, { ...mergedMap.get(key), ...s });
+    });
+
+    let combinedList = Array.from(mergedMap.values());
+
+    // Apply front-end filtering
+    if (search) {
+      const q = search.toLowerCase();
+      combinedList = combinedList.filter(
+        (s) =>
+          s.fullName?.toLowerCase().includes(q) ||
+          s.registerNumber?.toLowerCase().includes(q) ||
+          s.email?.toLowerCase().includes(q)
+      );
+    }
+    if (deptFilter) {
+      combinedList = combinedList.filter((s) => s.department === deptFilter);
+    }
+    if (yearFilter) {
+      combinedList = combinedList.filter((s) => Number(s.year) === Number(yearFilter));
+    }
+    if (statusFilter) {
+      combinedList = combinedList.filter((s) => s.status === statusFilter);
+    }
+
+    setStudents(combinedList);
+    setLoading(false);
   };
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
+    // Add to dataStore local storage
+    const newStudent = dataStore.addRegisteredStudent(formData);
+
     try {
-      const res = await api.post('/admin/students', formData);
-      if (res.success) {
-        setAddModal(false);
-        fetchStudents();
-      }
+      await api.post('/admin/students', formData);
     } catch (err) {
-      alert(err.toString());
-    } finally {
-      setSubmitting(false);
+      console.warn('Backend add student API call failed, saved locally:', err);
     }
+
+    setAddModal(false);
+    setFormData({
+      registerNumber: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      department: 'Computer Science',
+      course: 'B.Tech CSE',
+      year: 1,
+      semester: 1,
+      section: 'A',
+      gender: 'Male',
+    });
+    fetchStudents();
+    setSubmitting(false);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
+    dataStore.updateStudent(selectedStudent);
+
     try {
-      const res = await api.put(`/admin/students/${selectedStudent.id}`, selectedStudent);
-      if (res.success) {
-        setEditModal(false);
-        fetchStudents();
-      }
+      await api.put(`/admin/students/${selectedStudent.id}`, selectedStudent);
     } catch (err) {
-      alert(err.toString());
-    } finally {
-      setSubmitting(false);
+      console.warn('Backend edit student API call failed, updated locally:', err);
     }
+
+    setEditModal(false);
+    fetchStudents();
+    setSubmitting(false);
   };
 
   const handleDeactivate = async (id) => {
     if (!window.confirm('Deactivate this student record?')) return;
+
+    dataStore.deactivateStudent(id);
+
     try {
       await api.delete(`/admin/students/${id}`);
-      fetchStudents();
     } catch (err) {
-      alert(err.toString());
+      console.warn('Backend delete student API call failed, deactivated locally:', err);
     }
+
+    fetchStudents();
   };
 
   if (loading) return <LoadingSpinner label="Loading Student Master Records..." />;

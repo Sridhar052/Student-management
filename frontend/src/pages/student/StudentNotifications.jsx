@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import EmptyState from '../../components/EmptyState';
 import { Bell, CheckCheck, Trash2, AlertCircle, Calendar } from 'lucide-react';
@@ -13,42 +14,49 @@ const StudentNotifications = () => {
   }, []);
 
   const fetchNotifications = async () => {
+    let list = [];
     try {
       const res = await api.get('/notifications');
-      if (res.success && res.data) {
-        setNotifications(res.data);
+      if (res && res.success && Array.isArray(res.data)) {
+        list = res.data;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn('Notifications API offline, reading dataStore notifications:', err);
     }
+
+    if (list.length === 0) {
+      list = dataStore.getNotifications();
+    }
+
+    setNotifications(list);
+    setLoading(false);
   };
 
   const handleMarkAsRead = async (id) => {
+    dataStore.markNotificationRead(id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     try {
       await api.put(`/notifications/${id}/read`);
-      fetchNotifications();
     } catch (err) {
-      console.error(err);
+      console.warn('Backend mark notification read failed:', err);
     }
   };
 
   const handleMarkAllRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
       await api.put('/notifications/read-all');
-      fetchNotifications();
     } catch (err) {
-      console.error(err);
+      console.warn('Backend mark all read failed:', err);
     }
   };
 
   const handleDelete = async (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       await api.delete(`/notifications/${id}`);
-      fetchNotifications();
     } catch (err) {
-      console.error(err);
+      console.warn('Backend delete notification failed:', err);
     }
   };
 

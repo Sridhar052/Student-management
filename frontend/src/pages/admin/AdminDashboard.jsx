@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -40,14 +41,19 @@ const AdminDashboard = () => {
   const fetchAdminDashboard = async () => {
     try {
       const res = await api.get('/admin/dashboard');
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setData(res.data);
+        setLoading(false);
+        return;
       }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      console.warn('Backend API admin dashboard unavailable, computing metrics from local store:', e);
     }
+
+    // Dynamic fallback calculation from persistent dataStore
+    const summary = dataStore.getAdminDashboardSummary();
+    setData(summary);
+    setLoading(false);
   };
 
   if (loading) return <LoadingSpinner label="Loading Admin Dashboard Analytics..." />;

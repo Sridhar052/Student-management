@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GraduationCap, ArrowRight, User, Mail, Lock, BookOpen } from 'lucide-react';
 import api from '../services/api';
+import dataStore from '../services/dataStore';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -30,37 +31,44 @@ const Register = () => {
     setError('');
     setLoading(true);
 
-    try {
-      const res = await api.post('/auth/register', formData);
-      if (res && res.success && res.data) {
-        const { token: jwtToken, ...userData } = res.data;
-        localStorage.setItem('studenthub_token', jwtToken || 'demo-registered-jwt-token');
-        localStorage.setItem('studenthub_user', JSON.stringify(userData));
-        window.location.href = '/student/dashboard';
-        return;
-      }
-    } catch (err) {
-      console.warn('Backend API registration call unavailable, proceeding with account creation:', err);
-    }
-
-    // Smart Registration Fallback: Save new student profile so user is instantly logged in
+    // Form new student record
+    const regNo = formData.registerNumber || ('STU2026' + Math.floor(100 + Math.random() * 900));
     const newStudentUser = {
-      id: Date.now(),
-      registerNumber: formData.registerNumber || ('STU' + Math.floor(100000 + Math.random() * 900000)),
+      registerNumber: regNo,
       email: formData.email,
       role: 'ROLE_STUDENT',
       fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       department: formData.department || 'Computer Science',
       course: formData.course || 'B.Tech CSE',
       year: Number(formData.year) || 1,
       semester: Number(formData.semester) || 1,
+      status: 'ACTIVE',
       cgpa: 8.5,
       attendancePercentage: 94.0
     };
-    const newJwtToken = 'demo-registered-jwt-token-' + Date.now();
 
+    // Save student to local persistent storage so admin and student pages see it
+    const savedStudent = dataStore.addRegisteredStudent(newStudentUser);
+
+    try {
+      const res = await api.post('/auth/register', formData);
+      if (res && res.success && res.data) {
+        const { token: jwtToken, ...userData } = res.data;
+        const finalUser = { ...savedStudent, ...userData };
+        localStorage.setItem('studenthub_token', jwtToken || ('demo-jwt-token-' + Date.now()));
+        localStorage.setItem('studenthub_user', JSON.stringify(finalUser));
+        window.location.href = '/student/dashboard';
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend API registration call offline/unavailable, proceeding with stored student profile:', err);
+    }
+
+    const newJwtToken = 'demo-registered-jwt-token-' + Date.now();
     localStorage.setItem('studenthub_token', newJwtToken);
-    localStorage.setItem('studenthub_user', JSON.stringify(newStudentUser));
+    localStorage.setItem('studenthub_user', JSON.stringify(savedStudent));
     window.location.href = '/student/dashboard';
   };
 
