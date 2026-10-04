@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import dataStore from '../services/dataStore';
 
 const AuthContext = createContext();
 
@@ -33,23 +34,40 @@ export const AuthProvider = ({ children }) => {
         const lowerU = (username || '').toLowerCase();
         const isAdmin = lowerU.includes('admin') || username === 'ADMIN001';
         
-        const demoUser = isAdmin ? {
-          id: 1,
-          registerNumber: 'ADMIN001',
-          email: 'admin@studenthub.com',
-          role: 'ROLE_ADMIN',
-          fullName: 'System Administrator',
-          department: 'Academic Affairs'
-        } : {
-          id: 2,
-          registerNumber: username || 'STU2024001',
-          email: username.includes('@') ? username : 'student@studenthub.com',
-          role: 'ROLE_STUDENT',
-          fullName: 'Aarav Sharma',
-          department: 'Computer Science',
-          semester: 4,
-          cgpa: 8.75
-        };
+        let demoUser;
+        if (isAdmin) {
+          demoUser = {
+            id: 1,
+            registerNumber: 'ADMIN001',
+            email: 'admin@studenthub.com',
+            role: 'ROLE_ADMIN',
+            fullName: 'System Administrator',
+            department: 'Academic Affairs'
+          };
+        } else {
+          const registeredStudents = dataStore.getRegisteredStudents();
+          const match = registeredStudents.find(
+            (s) => s.registerNumber?.toLowerCase() === lowerU || s.email?.toLowerCase() === lowerU || s.studentId?.toLowerCase() === lowerU
+          );
+
+          if (match) {
+            demoUser = {
+              ...match,
+              role: 'ROLE_STUDENT',
+            };
+          } else {
+            demoUser = {
+              id: Date.now(),
+              registerNumber: username || 'STU2026101',
+              email: username.includes('@') ? username : `${username || 'student'}@studenthub.edu`,
+              role: 'ROLE_STUDENT',
+              fullName: username || 'Registered Student',
+              department: 'Computer Science',
+              semester: 1,
+              cgpa: 8.5
+            };
+          }
+        }
         const demoToken = 'demo-jwt-token-studenthub-2026';
         setToken(demoToken);
         setUser(demoUser);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import dataStore from '../../services/dataStore';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -35,7 +36,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [user]);
 
   const fetchDashboard = async () => {
     try {
@@ -50,25 +51,8 @@ const StudentDashboard = () => {
       setLoading(false);
     }
 
-    // Default dashboard fallback for registered student
-    setData({
-      registerNumber: user?.registerNumber || 'STU2026101',
-      fullName: user?.fullName || 'Student',
-      department: user?.department || 'Computer Science',
-      currentSemester: user?.semester || 1,
-      cgpa: user?.cgpa || 8.5,
-      attendancePercentage: user?.attendancePercentage || 94.0,
-      pendingFeesCount: 1,
-      totalPendingFee: 15000,
-      activeApplicationsCount: 1,
-      semesterGpas: { 1: 8.2, 2: 8.5, 3: 8.8, 4: 8.75 },
-      recentApplications: [
-        { id: 101, typeName: 'Bonafide Certificate Request', status: 'PENDING', createdAt: '2026-10-02' }
-      ],
-      recentNotifications: [
-        { id: 1, title: 'Welcome to StudentHub', message: 'Your student account registration was completed successfully!', timeAgo: 'Just now', read: false }
-      ]
-    });
+    const localSummary = dataStore.getStudentDashboardSummary(user);
+    setData(localSummary);
   };
 
   if (loading) return <LoadingSpinner label="Loading Student Dashboard..." />;
@@ -88,10 +72,10 @@ const StudentDashboard = () => {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
-              Semester {data?.currentSemester || 1} Academic Dashboard
+              Semester {data?.currentSemester || user?.semester || 1} Academic Dashboard
             </span>
             <h1 className="text-2xl lg:text-3xl font-bold text-white mt-2">
-              Welcome back, {user?.studentName || 'Student'} 👋
+              Welcome back, {data?.fullName || user?.fullName || user?.studentName || 'Student'} 👋
             </h1>
             <p className="text-slate-400 text-sm mt-1">
               Here is your overall academic progress, financial status, and application updates.

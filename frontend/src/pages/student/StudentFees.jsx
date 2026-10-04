@@ -44,24 +44,29 @@ const StudentFees = () => {
     }
 
     if (!feeData) {
-      const regNo = user?.registerNumber || 'STU2026001';
-      const userFees = dataStore.getFees().filter((f) => f.registerNumber === regNo || f.studentId === user?.id);
+      const regNo = user?.registerNumber;
+      const email = user?.email;
+      const userFees = dataStore.getFees().filter((f) => (regNo && f.registerNumber === regNo) || (email && f.email === email) || (user?.id && f.studentId === user.id));
       const totalFee = userFees.reduce((acc, f) => acc + (f.amount || 0), 0);
       const paidAmount = userFees.reduce((acc, f) => acc + (f.paidAmount || 0), 0);
       const pendingAmount = userFees.reduce((acc, f) => acc + (f.pendingAmount || 0), 0);
 
       feeData = {
-        totalFee: totalFee || 50000,
-        paidAmount: paidAmount || 45000,
-        pendingAmount: pendingAmount || 5000,
+        totalFee: totalFee || (userFees.length > 0 ? 0 : 50000),
+        paidFee: paidAmount,
+        paidAmount: paidAmount,
+        pendingFee: pendingAmount,
+        pendingAmount: pendingAmount,
         status: pendingAmount === 0 ? 'PAID' : 'PENDING',
         feeBreakdown: userFees.length > 0 ? userFees : dataStore.getFees(),
+        feesBreakdown: userFees.length > 0 ? userFees : dataStore.getFees(),
       };
     }
 
     if (payList.length === 0) {
-      const regNo = user?.registerNumber || 'STU2026001';
-      payList = dataStore.getPayments().filter((p) => p.registerNumber === regNo || p.studentId === user?.id);
+      const regNo = user?.registerNumber;
+      const email = user?.email;
+      payList = dataStore.getPayments().filter((p) => (regNo && p.registerNumber === regNo) || (email && p.email === email) || (user?.id && p.studentId === user.id));
     }
 
     setFeeSummary(feeData);
@@ -107,11 +112,11 @@ const StudentFees = () => {
   if (loading) return <LoadingSpinner label="Loading Fee Accounts & History..." />;
 
   const totalFee = feeSummary?.totalFee || 0;
-  const paidFee = feeSummary?.paidFee || 0;
-  const pendingFee = feeSummary?.pendingFee || 0;
+  const paidFee = feeSummary?.paidFee || feeSummary?.paidAmount || 0;
+  const pendingFee = feeSummary?.pendingFee || feeSummary?.pendingAmount || 0;
   const paidPercent = totalFee > 0 ? Math.round((paidFee / totalFee) * 100) : 0;
 
-  const breakdown = feeSummary?.feesBreakdown || [];
+  const breakdown = feeSummary?.feesBreakdown || feeSummary?.feeBreakdown || [];
 
   return (
     <div className="space-y-8 animate-fade-in">

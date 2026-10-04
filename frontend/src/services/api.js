@@ -12,7 +12,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('studenthub_token');
-    if (token) {
+    // Only send Authorization header if token is a valid JWT (not local demo token)
+    if (token && !token.startsWith('demo-')) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -24,11 +25,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    const token = localStorage.getItem('studenthub_token');
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('studenthub_token');
-      localStorage.removeItem('studenthub_user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // Only clear session if user was using a real backend token
+      if (token && !token.startsWith('demo-')) {
+        localStorage.removeItem('studenthub_token');
+        localStorage.removeItem('studenthub_user');
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(

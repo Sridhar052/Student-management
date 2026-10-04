@@ -58,36 +58,37 @@ const StudentProfile = () => {
 
     if (!p) {
       const students = dataStore.getRegisteredStudents();
-      const currentReg = user?.registerNumber || 'STU2026001';
-      p = students.find((s) => s.registerNumber === currentReg) || user || students[0];
+      const currentReg = user?.registerNumber;
+      const currentEmail = user?.email;
+      p = students.find((s) => (currentReg && s.registerNumber === currentReg) || (currentEmail && s.email === currentEmail) || (user?.id && s.id === user.id)) || user || students[0];
     }
 
     setProfile(p);
     setFormData({
-      fullName: p?.fullName || p?.studentName || 'Student',
-      registerNumber: p?.registerNumber || 'STU2026001',
-      studentId: p?.studentId || p?.registerNumber || 'STU2026001',
+      fullName: p?.fullName || p?.studentName || user?.fullName || 'Student',
+      registerNumber: p?.registerNumber || user?.registerNumber || '',
+      studentId: p?.studentId || p?.registerNumber || user?.registerNumber || '',
       dob: p?.dob || '2004-05-15',
       gender: p?.gender || 'Male',
       phone: p?.phone || '+91 98765 43210',
-      email: p?.email || 'student@studenthub.edu',
+      email: p?.email || user?.email || 'student@studenthub.edu',
       address: p?.address || '123 Academic Block, Campus Avenue',
       city: p?.city || 'Chennai',
       district: p?.district || 'Chennai',
       state: p?.state || 'Tamil Nadu',
       pincode: p?.pincode || '600028',
-      department: p?.department || 'Computer Science',
-      course: p?.course || 'B.Tech CSE',
+      department: p?.department || user?.department || 'Computer Science',
+      course: p?.course || user?.course || 'B.Tech CSE',
       batch: p?.batch || '2023-2027',
-      year: p?.year || 1,
-      semester: p?.semester || 1,
+      year: p?.year || user?.year || 1,
+      semester: p?.semester || user?.semester || 1,
       section: p?.section || 'A',
       admissionDate: p?.admissionDate || '2023-08-15',
-      parentName: p?.parentName || 'Rajesh Sharma',
+      parentName: p?.parentName || '',
       parentRelation: p?.parentRelation || 'Father',
-      parentPhone: p?.parentPhone || '+91 98765 00000',
-      parentEmail: p?.parentEmail || 'parent@studenthub.edu',
-      profileImage: p?.profileImage || '',
+      parentPhone: p?.parentPhone || '',
+      parentEmail: p?.parentEmail || '',
+      profileImage: p?.profileImage || user?.profileImage || '',
     });
     setLoading(false);
   };

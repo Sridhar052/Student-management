@@ -29,7 +29,7 @@ const StudentMarks = () => {
     }
 
     if (!summary) {
-      summary = dataStore.getStudentMarks(user?.registerNumber || 'STU2026001');
+      summary = dataStore.getStudentMarks(user?.registerNumber || user?.email || user?.id || 'STU2026001');
     }
 
     setAcademicSummary(summary);

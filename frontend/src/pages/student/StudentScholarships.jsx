@@ -37,8 +37,9 @@ const StudentScholarships = () => {
 
     if (schData.length === 0) schData = dataStore.getScholarships();
     if (myData.length === 0) {
-      const regNo = user?.registerNumber || 'STU2026001';
-      myData = dataStore.getScholarshipApplications().filter((a) => a.registerNumber === regNo || a.studentId === user?.id);
+      const regNo = user?.registerNumber;
+      const email = user?.email;
+      myData = dataStore.getScholarshipApplications().filter((a) => (regNo && a.registerNumber === regNo) || (email && a.email === email) || (user?.id && a.studentId === user.id));
     }
 
     setScholarships(schData);

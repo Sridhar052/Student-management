@@ -45,8 +45,9 @@ const StudentApplications = () => {
     }
 
     if (list.length === 0) {
-      const regNo = user?.registerNumber || 'STU2026001';
-      list = dataStore.getApplications().filter((a) => a.registerNumber === regNo || a.studentId === user?.id);
+      const regNo = user?.registerNumber;
+      const email = user?.email;
+      list = dataStore.getApplications().filter((a) => (regNo && a.registerNumber === regNo) || (email && a.email === email) || (user?.id && a.studentId === user.id));
     }
 
     setApplications(list);
@@ -300,27 +301,27 @@ const StudentApplications = () => {
             <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold text-indigo-400">
-                  Application #APP-{selectedAppDetails.application.id}
+                  Application #APP-{(selectedAppDetails.application || selectedAppDetails).id}
                 </span>
-                <StatusBadge status={selectedAppDetails.application.status} />
+                <StatusBadge status={(selectedAppDetails.application || selectedAppDetails).status} />
               </div>
               <h3 className="text-base font-bold text-white">
-                {selectedAppDetails.application.title}
+                {(selectedAppDetails.application || selectedAppDetails).title}
               </h3>
               <p className="text-xs text-slate-300">
-                {selectedAppDetails.application.description}
+                {(selectedAppDetails.application || selectedAppDetails).description}
               </p>
               <div className="text-[11px] text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800">
-                <span>Category: {selectedAppDetails.application.applicationType}</span>
-                <span>Submitted: {new Date(selectedAppDetails.application.submittedDate).toLocaleString()}</span>
+                <span>Category: {(selectedAppDetails.application || selectedAppDetails).applicationType}</span>
+                <span>Submitted: {new Date((selectedAppDetails.application || selectedAppDetails).submittedDate).toLocaleString()}</span>
               </div>
             </div>
 
             {/* Admin Remarks */}
-            {selectedAppDetails.application.adminRemarks && (
+            {(selectedAppDetails.application || selectedAppDetails).adminRemarks && (
               <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/30">
                 <h4 className="text-xs font-bold text-indigo-300 mb-1">Administrative Remarks</h4>
-                <p className="text-xs text-slate-200">{selectedAppDetails.application.adminRemarks}</p>
+                <p className="text-xs text-slate-200">{(selectedAppDetails.application || selectedAppDetails).adminRemarks}</p>
               </div>
             )}
 
